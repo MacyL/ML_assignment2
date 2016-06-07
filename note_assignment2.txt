@@ -1,0 +1,266 @@
+#*********************************************
+#Preprocessing sections
+#*********************************************
+#input data
+English<-readLines('English_pos.txt') 
+German<-readLines('German_pos.txt')
+Japanese<-readLines('Japanese_pos.txt')
+# tips : R readLines function can also read from url 
+
+#Split words without crossing sentence bundary 
+English.split<-strsplit(English," ")
+German.split<-strsplit(German," ")
+Japanese.split<-strsplit(Japanese," ")
+
+# Prepare a comprehensive list
+#count the words in each sentence 
+English.words.in.sentence<-sapply(English.split, function(x) length(x))
+German.words.in.sentence<-sapply(German.split, function(x) length(x))
+Japanese.words.in.sentence<-sapply(Japanese.split, function(x) length(x))
+
+# Count the POS in each sentence 
+English.POS.in.sentence<-sapply(English.split, function(x) table(x)/length(x))
+German.POS.in.sentence<-sapply(German.split, function(x) table(x)/length(x))
+Japanese.POS.in.sentence<-sapply(Japanese.split, function(x) table(x)/length(x))
+#***********************************************************************
+#Task 1 Label 1 in German data and label 0 in English and Japanese data
+#***********************************************************************
+English.words.matrix<-as.matrix(cbind(unlist(English.words.in.sentence),rep("0",length(English.words.in.sentence))))
+German.words.matrix<-as.matrix(cbind(unlist(German.words.in.sentence),rep("1",length(German.words.in.sentence))))
+Japanese.words.matrix<-as.matrix(cbind(unlist(Japanese.words.in.sentence),rep("0",length(Japanese.words.in.sentence))))
+Language.words<-rbind(English.words.matrix,German.words.matrix,Japanese.words.matrix)
+colnames(Language.words)<-c("word_count","German")
+Language.words<-as.data.frame(Language.words)
+Language.words$word_count<-as.numeric(as.character(Language.words$word_count))
+task1.glm<-glm(German~word_count,data=Language.words,family="binomial")
+#summary(task1.glm) for checking the model
+
+#Now we are going to predict something, yes. The test data is the training data. yes, it's not perfect but this is homework.
+my.task1.predict<-predict(task1.glm,type="response")
+my.task1.predict.label<-ifelse(predict(task1.glm,type="response")>0.5,1,0)
+Language.words<-data.frame(Language.words,my.task1.predict.label)
+#Now we are going to calculate the false positive something like that
+#table(Language.words$my.task1.predict.label,Language.words$German)This is a lazy and good way, but I want to go for a save way
+source("assignment2_tools.R")
+my.evaluation(Language.words,2,3)
+#****************************************************************
+#Task2 Change the probability threshold other than 0.5.
+#****************************************************************
+my.task2.predict<-list()
+for (i in seq(0, 1, by=0.001)){
+	my.predict.label<-ifelse(predict(task1.glm,type="response")>i,1,0)
+	Language.words.whatever<-data.frame(Language.words, my.predict.label)
+	my.e<-my.evaluation(Language.words.whatever,2,4)
+	#my.table<-table(my.predict.label,Language.words$German)
+	my.task2.predict[[length(my.task2.predict)+1]]<-list("i"=i, "table"=my.e)
+}
+
+A.tamp.list<-data.frame(rep(1,1000),rep(0,1000),rep(0,1000),rep(0,1000),rep(0,1000))
+for(r in 1:1000){
+	my.i<-my.task2.predict[[r]]$i
+	A.tamp.list[r,]<-c(my.task2.predict[[r]]$table$value,my.i)
+	}
+head(A.tamp.list,400)
+# The answer is 0.350, and F-score is 0.5444269
+
+#**************************************************************
+#Task 3 create a data frame, label=0 Non_German label=1 German
+#***************************************************************
+source("assignment2_tool.R")
+n<-c("word_count","ADJ","ADP","ADV","AUX","CONJ","DET","NOUN","NUM","PART","PRON","PROPN","PUNCT","SCONJ","VERB","X","German")
+English.15POS.calculation<-lapply(English.POS.in.sentence, my.matrix.function, n)
+English.17col.matrix<-matrix(unlist(English.15POS.calculation),ncol=17,byrow=TRUE)
+English.17col.matrix[,16]<-English.words.in.sentence
+English.17col.matrix[,7]<-0
+colnames(English.17col.matrix)<-c("ADJ","ADP","ADV","AUX","CONJ","DET","German","NOUN","NUM","PART","PRON","PROPN","PUNCT","SCONJ","VERB","word_count","X")
+German.15POS.calculation<-lapply(German.POS.in.sentence, my.matrix.function, n)
+German.17col.matrix<-matrix(unlist(German.15POS.calculation),ncol=17,byrow=TRUE)
+German.17col.matrix[,16]<-German.words.in.sentence
+German.17col.matrix[,7]<-1
+colnames(German.17col.matrix)<-c("ADJ","ADP","ADV","AUX","CONJ","DET","German","NOUN","NUM","PART","PRON","PROPN","PUNCT","SCONJ","VERB","word_count","X")
+Japanese.15POS.calculation<-lapply(Japanese.POS.in.sentence, my.matrix.function, n)
+Japanese.17col.matrix<-matrix(unlist(Japanese.15POS.calculation),ncol=17,byrow=TRUE)
+Japanese.17col.matrix[,16]<-Japanese.words.in.sentence
+Japanese.17col.matrix[,7]<-0
+colnames(Japanese.17col.matrix)<-c("ADJ","ADP","ADV","AUX","CONJ","DET","German","NOUN","NUM","PART","PRON","PROPN","PUNCT","SCONJ","VERB","word_count","X")
+All.language.set<-rbind(English.17col.matrix,German.17col.matrix,Japanese.17col.matrix)
+All.language.set<-as.data.frame(All.language.set)
+task3.glm<-glm(as.factor(German)~.,data=All.language.set,family="binomial")
+summary(task3.glm)
+
+#task3 predict 
+my.predict3.label<-ifelse(predict(task3.glm,type="response")>0.5,1,0)
+All.language.set<-data.frame(All.language.set, my.predict3.label)
+my.evaluation(All.language.set,7,18)
+
+#******************************************************************
+#Task4 label=1 English, label=2 German, label=3 Japanese
+#******************************************************************
+source("assignment2_tool.R")
+n<-c("word_count","ADJ","ADP","ADV","AUX","CONJ","DET","NOUN","NUM","PART","PRON","PROPN","PUNCT","SCONJ","VERB","X","German")
+English.15POS.calculation<-lapply(English.POS.in.sentence, my.matrix.function, n)
+English.17col.matrix<-matrix(unlist(English.15POS.calculation),ncol=17,byrow=TRUE)
+English.17col.matrix[,16]<-English.words.in.sentence
+English.17col.matrix[,7]<-1
+colnames(English.17col.matrix)<-c("ADJ","ADP","ADV","AUX","CONJ","DET","German","NOUN","NUM","PART","PRON","PROPN","PUNCT","SCONJ","VERB","word_count","X")
+German.15POS.calculation<-lapply(German.POS.in.sentence, my.matrix.function, n)
+German.17col.matrix<-matrix(unlist(German.15POS.calculation),ncol=17,byrow=TRUE)
+German.17col.matrix[,16]<-German.words.in.sentence
+German.17col.matrix[,7]<-2
+colnames(German.17col.matrix)<-c("ADJ","ADP","ADV","AUX","CONJ","DET","German","NOUN","NUM","PART","PRON","PROPN","PUNCT","SCONJ","VERB","word_count","X")
+Japanese.15POS.calculation<-lapply(Japanese.POS.in.sentence, my.matrix.function, n)
+Japanese.17col.matrix<-matrix(unlist(Japanese.15POS.calculation),ncol=17,byrow=TRUE)
+Japanese.17col.matrix[,16]<-Japanese.words.in.sentence
+Japanese.17col.matrix[,7]<-3
+colnames(Japanese.17col.matrix)<-c("ADJ","ADP","ADV","AUX","CONJ","DET","German","NOUN","NUM","PART","PRON","PROPN","PUNCT","SCONJ","VERB","word_count","X")
+All.language.set.task4<-rbind(English.17col.matrix,German.17col.matrix,Japanese.17col.matrix)
+All.language.set.task4<-as.data.frame(All.language.set.task4)
+colnames(All.language.set.task4)[7]<-"language"
+All.language.set.task4$language<-as.factor(All.language.set.task4$language)
+#LiblineaR
+library(LiblineaR)
+my.target<-All.language.set.task4[,7]
+my.data<-data.frame(All.language.set.task4[,1:6],All.language.set.task4[,8:17])
+#L1 reg
+my.L1.LiblineaR<-LiblineaR(data=my.data,target=my.target,type=6, cost=50)
+#L2 reg
+my.L2.LiblibeaR<-LiblineaR(data=my.data,target=my.target,type=0)
+#Predict L1
+my.L1.LiblineaR.predict<-predict(my.L1.LiblineaR,my.data,decisionValues=TRUE)
+All.language.set.task4.L1.reg<-data.frame(All.language.set.task4,my.L1.LiblineaR.predict)
+#Predict L2
+my.L2.LiblineaR.predict<-predict(my.L2.LiblibeaR,my.data,decisionValues=TRUE)
+All.language.set.task4.L2.reg<-data.frame(All.language.set.task4,my.L2.LiblineaR.predict)
+#Accuracy L1
+task4<-data.frame(All.language.set.task4.L1.reg$language,All.language.set.task4.L1.reg$predictions)
+colnames(task4)<-c("language","prediction")
+English.or.not<-ifelse((task4$language==1),1,0)
+German.or.not<-ifelse((task4$language==2),1,0)
+Japanese.or.not<-ifelse((task4$language==3),1,0)
+task4<-data.frame(task4,English.or.not,German.or.not,Japanese.or.not)
+Predict.English<-ifelse((task4$prediction==1),1,0)
+Predict.German<-ifelse((task4$prediction==2),1,0)
+Predict.Japanese<-ifelse((task4$prediction==3),1,0)
+task4<-data.frame(task4,Predict.English,Predict.German,Predict.Japanese)
+colnames(task4)<-c("language","prediction","English","German","Japanese","p.English","p.German","p.Japanese")
+English.calculation<-my.evaluation(task4,3,6)
+English.calculation
+$name
+[1] "Accuracy"  "Precision" "Recall"    "F-score"  
+
+$value
+[1] 0.7906189 0.7523697 0.6923956 0.7211379
+
+German.calculation<-my.evaluation(task4,4,7)
+German.calculation
+$name
+[1] "Accuracy"  "Precision" "Recall"    "F-score"  
+
+$value
+[1] 0.7965233 0.7124839 0.7641248 0.7374013
+
+Japanese.calculation<-my.evaluation(task4,5,8)
+Japanese.calculation
+$name
+[1] "Accuracy"  "Precision" "Recall"    "F-score"  
+
+$value
+[1] 0.9829456 0.9558419 0.9723862 0.9640430
+
+
+#Accuracy L2
+task4.L2<-data.frame(All.language.set.task4.L2.reg$language, All.language.set.task4.L2.reg$predictions)
+colnames(task4.L2)<-c("language","prediction")
+English.or.not.L2<-ifelse((task4.L2$language==1),1,0)
+German.or.not.L2<-ifelse((task4.L2$language==2),1,0)
+Japanese.or.not.L2<-ifelse((task4.L2$language==3),1,0)
+task4.L2<-data.frame(task4.L2,English.or.not.L2,German.or.not.L2,Japanese.or.not.L2)
+Predict.English.L2<-ifelse((task4.L2$prediction==1),1,0)
+Predict.German.L2<-ifelse((task4.L2$prediction==2),1,0)
+Predict.Japanese.L2<-ifelse((task4.L2$prediction==3),1,0)
+task4.L2<-data.frame(task4.L2,Predict.English.L2,Predict.German.L2,Predict.Japanese.L2)
+colnames(task4.L2)<-c("language","prediction","English","German","Japanese","p.English","p.German","p.Japanese")
+English.calculation.L2<-my.evaluation(task4.L2,3,6)
+English.calculation.L2
+$name
+[1] "Accuracy"  "Precision" "Recall"    "F-score"  
+
+$value
+[1] 0.7698478 0.7106333 0.6939598 0.7021976
+German.calculation.L2<-my.evaluation(task4.L2,4,7)
+German.calculation.L2
+$name
+[1] "Accuracy"  "Precision" "Recall"    "F-score"  
+
+$value
+[1] 0.7821975 0.7085822 0.7090726 0.7088273
+Japanese.calculation.L2<-my.evaluation(task4.L2,5,8)
+Japanese.calculation.L2
+Japanese.calculation.L2
+$name
+[1] "Accuracy"  "Precision" "Recall"    "F-score"  
+
+$value
+[1] 0.9769001 0.9334423 0.9709855 0.9518439
+
+#*****************************************************************************************************
+#task5
+# Since I the LiblineaR cross validation only return one accuracy and I have nowhere to calculate Standard error,
+#I create sub group by myself. I use stratfied sampling. 
+#******************************************************************************************************
+#shaffle the data. 
+#Do stratified sampling
+my.fold.indicate.English.data<- as.factor(rep(1:10, nrow(English.17col.matrix) / 10))
+my.fold.indicate.German.data<- as.factor(rep(1:10, nrow(German.17col.matrix) / 10))
+my.fold.indicate.Japanese.data<- as.factor(rep(1:10, nrow(Japanese.17col.matrix) / 10))
+#adding the missing number 
+my.fold.indicate.Japanese.data<-sample(as.factor(c(1,2,3,4,5,my.fold.indicate.Japanese.data)))
+my.fold.indicate.German.data<-sample(as.factor(c(1,2,3,4,my.fold.indicate.German.data)))
+my.fold.indicate.English.data<-sample(as.factor(c(1,2,my.fold.indicate.English.data)))
+#shaffle my data
+my.shaffle.English<-English.17col.matrix[sample(nrow(English.17col.matrix)),]
+my.shaffle.German<-German.17col.matrix[sample(nrow(German.17col.matrix)),]
+my.shaffle.Japanese<-Japanese.17col.matrix[sample(nrow(Japanese.17col.matrix)),]
+English.shaffle<-data.frame(my.shaffle.English, my.fold.indicate.English.data)
+colnames(English.shaffle)[18]<-"fold"
+German.shaffle<-data.frame(my.shaffle.German, my.fold.indicate.German.data)
+colnames(German.shaffle)[18]<-"fold"
+Japanese.shaffle<-data.frame(my.shaffle.Japanese, my.fold.indicate.Japanese.data)
+colnames(Japanese.shaffle)[18]<-"fold"
+my.total.shaffle<-rbind(English.shaffle,German.shaffle,Japanese.shaffle)
+colnames(my.total.shaffle)[7]<-"language"
+my.10fold.data<-split(my.total.shaffle,my.total.shaffle$fold)
+
+#Now do cross validation and prediction
+my.precious.task5.list<-list()
+for(i in 1:10){
+    #my.data.train<-my.shaffle.data[-my.10fold.data[[i]],]
+    my.data.train<-subset(my.total.shaffle, my.total.shaffle$fold !=1)
+    my.data.test<-my.10fold.data[[i]]
+    my.data.train.target<-my.data.train[,7]
+    my.data.train.predictors<-data.frame(my.data.train[,1:6],my.data.train[,8:17])
+    my.data.test.predictors<-data.frame(my.data.test[,1:6],my.data.test[,8:17])
+    my.model<-LiblineaR(data=my.data.train.predictors,target=my.data.train.target,type=0,cost=50)
+    my.predict<-predict(my.model,my.data.test.predictors,decisionValues=TRUE)
+    my.precious.task5.list[[length(my.precious.task5.list)+1]]<-list("model"=my.model,"my.predict"=my.predict)
+    }
+my.precious.last.list<-list()
+for(i in 1:10){
+	my.predict<-my.precious.task5.list[[i]]$my.predict$predictions
+	my.test<-my.10fold.data[[i]]
+	my.test.new.data.frame<-data.frame(my.test,my.predict)
+	my.other.data.frame<-data.frame(my.test.new.data.frame$language, my.test.new.data.frame$my.predict)
+	colnames(my.other.data.frame)<-c("language","prediction")
+	my.table<-table(my.other.data.frame$language,my.other.data.frame$prediction)
+	my.accuracy<-(my.table[1,1]+my.table[2,2]+my.table[3,3])/(length(my.other.data.frame$language))
+	my.precious.last.list[[length(my.precious.last.list)+1]]<-list(my.accuracy)	
+	}
+
+#total accuracy
+whatever.vector<-unlist(my.precious.last.list)
+mean(unlist(whatever.vector))
+[1] 0.7662949
+sd(whatever.vector)/sqrt(length(whatever.vector))
+[1] 0.00200215
+
+
