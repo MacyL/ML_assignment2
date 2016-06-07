@@ -124,7 +124,7 @@ my.data<-data.frame(All.language.set.task4[,1:6],All.language.set.task4[,8:17])
 #L1 reg
 my.L1.LiblineaR<-LiblineaR(data=my.data,target=my.target,type=6, cost=50)
 #L2 reg
-my.L2.LiblibeaR<-LiblineaR(data=my.data,target=my.target,type=0)
+my.L2.LiblibeaR<-LiblineaR(data=my.data,target=my.target,type=0, cost=50)
 #Predict L1
 my.L1.LiblineaR.predict<-predict(my.L1.LiblineaR,my.data,decisionValues=TRUE)
 All.language.set.task4.L1.reg<-data.frame(All.language.set.task4,my.L1.LiblineaR.predict)
@@ -134,6 +134,11 @@ All.language.set.task4.L2.reg<-data.frame(All.language.set.task4,my.L2.LiblineaR
 #Accuracy L1
 task4<-data.frame(All.language.set.task4.L1.reg$language,All.language.set.task4.L1.reg$predictions)
 colnames(task4)<-c("language","prediction")
+#Overall accuracy
+my.table<-table(task4)
+my.accuracy.L1<-(my.table[1,1]+my.table[2,2]+my.table[3,3])/(length(task4$language))
+
+#Language accuracy, but I think we don't need to report this.
 English.or.not<-ifelse((task4$language==1),1,0)
 German.or.not<-ifelse((task4$language==2),1,0)
 Japanese.or.not<-ifelse((task4$language==3),1,0)
@@ -143,34 +148,20 @@ Predict.German<-ifelse((task4$prediction==2),1,0)
 Predict.Japanese<-ifelse((task4$prediction==3),1,0)
 task4<-data.frame(task4,Predict.English,Predict.German,Predict.Japanese)
 colnames(task4)<-c("language","prediction","English","German","Japanese","p.English","p.German","p.Japanese")
+#Language accuracy, but I think we don't need to report this.
 English.calculation<-my.evaluation(task4,3,6)
-English.calculation
-$name
-[1] "Accuracy"  "Precision" "Recall"    "F-score"  
-
-$value
-[1] 0.7906189 0.7523697 0.6923956 0.7211379
-
 German.calculation<-my.evaluation(task4,4,7)
-German.calculation
-$name
-[1] "Accuracy"  "Precision" "Recall"    "F-score"  
-
-$value
-[1] 0.7965233 0.7124839 0.7641248 0.7374013
-
 Japanese.calculation<-my.evaluation(task4,5,8)
-Japanese.calculation
-$name
-[1] "Accuracy"  "Precision" "Recall"    "F-score"  
-
-$value
-[1] 0.9829456 0.9558419 0.9723862 0.9640430
 
 
 #Accuracy L2
 task4.L2<-data.frame(All.language.set.task4.L2.reg$language, All.language.set.task4.L2.reg$predictions)
 colnames(task4.L2)<-c("language","prediction")
+#Overall accuracy
+my.L2.table<-table(task4.L2)
+my.accuracy.L2<-(my.L2.table[1,1]+my.L2.table[2,2]+my.L2.table[3,3])/(length(task4.L2$language))
+
+##Language accuracy, but I think we don't need to report this.
 English.or.not.L2<-ifelse((task4.L2$language==1),1,0)
 German.or.not.L2<-ifelse((task4.L2$language==2),1,0)
 Japanese.or.not.L2<-ifelse((task4.L2$language==3),1,0)
@@ -181,27 +172,9 @@ Predict.Japanese.L2<-ifelse((task4.L2$prediction==3),1,0)
 task4.L2<-data.frame(task4.L2,Predict.English.L2,Predict.German.L2,Predict.Japanese.L2)
 colnames(task4.L2)<-c("language","prediction","English","German","Japanese","p.English","p.German","p.Japanese")
 English.calculation.L2<-my.evaluation(task4.L2,3,6)
-English.calculation.L2
-$name
-[1] "Accuracy"  "Precision" "Recall"    "F-score"  
-
-$value
-[1] 0.7698478 0.7106333 0.6939598 0.7021976
 German.calculation.L2<-my.evaluation(task4.L2,4,7)
-German.calculation.L2
-$name
-[1] "Accuracy"  "Precision" "Recall"    "F-score"  
-
-$value
-[1] 0.7821975 0.7085822 0.7090726 0.7088273
 Japanese.calculation.L2<-my.evaluation(task4.L2,5,8)
-Japanese.calculation.L2
-Japanese.calculation.L2
-$name
-[1] "Accuracy"  "Precision" "Recall"    "F-score"  
 
-$value
-[1] 0.9769001 0.9334423 0.9709855 0.9518439
 
 #*****************************************************************************************************
 #task5
