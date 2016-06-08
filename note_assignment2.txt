@@ -122,10 +122,10 @@ All.language.set.task4$language<-as.factor(All.language.set.task4$language)
 library(LiblineaR)
 my.target<-All.language.set.task4[,7]
 my.data<-data.frame(All.language.set.task4[,1:6],All.language.set.task4[,8:17])
-#L1 reg
-my.L1.LiblineaR<-LiblineaR(data=my.data,target=my.target,type=6, cost=50)
+#L1 reg the "cost" is the inverse of regularization constant. 
+my.L1.LiblineaR<-LiblineaR(data=my.data,target=my.target,type=6, cost=0.02)
 #L2 reg
-my.L2.LiblibeaR<-LiblineaR(data=my.data,target=my.target,type=0, cost=50)
+my.L2.LiblibeaR<-LiblineaR(data=my.data,target=my.target,type=0, cost=0.02)
 #Predict L1
 my.L1.LiblineaR.predict<-predict(my.L1.LiblineaR,my.data,decisionValues=TRUE)
 All.language.set.task4.L1.reg<-data.frame(All.language.set.task4,my.L1.LiblineaR.predict)
@@ -214,7 +214,7 @@ for(i in 1:10){
     my.data.train.target<-my.data.train[,7]
     my.data.train.predictors<-data.frame(my.data.train[,1:6],my.data.train[,8:17])
     my.data.test.predictors<-data.frame(my.data.test[,1:6],my.data.test[,8:17])
-    my.model<-LiblineaR(data=my.data.train.predictors,target=my.data.train.target,type=0,cost=50)
+    my.model<-LiblineaR(data=my.data.train.predictors,target=my.data.train.target,type=0,cost=0.02)
     my.predict<-predict(my.model,my.data.test.predictors,decisionValues=TRUE)
     my.precious.task5.list[[length(my.precious.task5.list)+1]]<-list("model"=my.model,"my.predict"=my.predict)
     }
