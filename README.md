@@ -1,4 +1,6 @@
 # ML_assignment2
-All the R codes were built to solve my machine learning assignment 2. 
-There are two files, one is detail R commands (notes_assignment2) and the other one is the functions I built (assignment2_tool.R). 
+
+The purpose of this project is to solve tasks in Machine learning assignment 2. 
+There are three files, notes_assignment2 provides the detail R commands, assignment2_tool.R contains the tools I built for solving some tasks. The PDF file has all my answers. 
+
 Enjoy!
