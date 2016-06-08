@@ -1,5 +1,5 @@
 #*********************************************
-#Preprocessing sections
+#Preprocessing section
 #*********************************************
 #input data
 English<-readLines('English_pos.txt') 
@@ -39,8 +39,9 @@ task1.glm<-glm(German~word_count,data=Language.words,family="binomial")
 my.task1.predict<-predict(task1.glm,type="response")
 my.task1.predict.label<-ifelse(predict(task1.glm,type="response")>0.5,1,0)
 Language.words<-data.frame(Language.words,my.task1.predict.label)
-#Now we are going to calculate the false positive something like that
-#table(Language.words$my.task1.predict.label,Language.words$German)This is a lazy and good way, but I want to go for a save way
+#Now we are going to calculate the false positive, something like that
+#table(Language.words$my.task1.predict.label,Language.words$German)
+#This is a lazy and good way, but I want to go for a save way
 source("assignment2_tools.R")
 my.evaluation(Language.words,2,3)
 #****************************************************************
@@ -178,7 +179,7 @@ Japanese.calculation.L2<-my.evaluation(task4.L2,5,8)
 
 #*****************************************************************************************************
 #task5
-# Since I the LiblineaR cross validation only return one accuracy and I have nowhere to calculate Standard error,
+# Since the LiblineaR cross validation only return one accuracy and I have nowhere to calculate Standard error,
 #I create sub group by myself. I use stratfied sampling. 
 #******************************************************************************************************
 #shaffle the data. 
