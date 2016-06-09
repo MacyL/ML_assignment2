@@ -232,7 +232,7 @@ for(i in 1:10){
 
 #total accuracy
 whatever.vector<-unlist(my.precious.last.list)
-mean(unlist(whatever.vector))
+mean(whatever.vector)
 [1] 0.7662949
 sd(whatever.vector)/sqrt(length(whatever.vector))
 [1] 0.00200215
